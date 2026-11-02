@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mil Palabras</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#1E4EB6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mil Palabras">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,600&display=swap">
+<style>
+/* Layout: one-column phone app; index-card flashcard in the middle, tab bar pinned to the bottom */
+:root{
+  --bg:#E8EDF3; --surface:#F7F9FB; --card:#FFFFFF; --ink:#15213A; --muted:#58657F;
+  --line:#D2DBE7; --rule:#DCE6F4; --margin:#DD5269; --accent:#1E4EB6; --on-accent:#FFFFFF;
+  --again:#BF374B; --hard:#9C6410; --good:#2B7A54; --easy:#1E4EB6;
+  --shade:rgba(21,33,58,.22);
+  --f-word:"Literata",Georgia,"Times New Roman",serif;
+  --f-ui:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D121B; --surface:#141B27; --card:#1A2331; --ink:#E6EBF3; --muted:#94A1B8;
+  --line:#2A3546; --rule:#232E42; --margin:#E9728A; --accent:#8AABFF; --on-accent:#0D121B;
+  --again:#F07A8D; --hard:#DFA54B; --good:#5DC08E; --easy:#8AABFF; --shade:rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D121B; --surface:#141B27; --card:#1A2331; --ink:#E6EBF3; --muted:#94A1B8;
+  --line:#2A3546; --rule:#232E42; --margin:#E9728A; --accent:#8AABFF; --on-accent:#0D121B;
+  --again:#F07A8D; --hard:#DFA54B; --good:#5DC08E; --easy:#8AABFF; --shade:rgba(0,0,0,.5); color-scheme:dark}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} [hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 112px}
+.view[hidden]{display:none!important}
+
+/* header */
+.mast{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:20px}
+.mast h1{font-family:var(--f-word);font-weight:600;font-size:1.75rem;letter-spacing:-.01em;margin:0}
+.mast h1 span{color:var(--margin)}
+.mast p{margin:0;color:var(--muted);font-size:.85rem}
+
+/* today */
+.today{background:var(--card);border-radius:14px;box-shadow:0 1px 0 var(--line),0 14px 30px -18px var(--shade);padding:20px;display:grid;gap:18px}
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.tally b{display:block;font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.tally small{color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.c-new{color:var(--accent)} .c-learn{color:var(--again)} .c-due{color:var(--good)}
+.btn{border:0;border-radius:10px;padding:14px 18px;font-weight:600;font-size:1rem}
+.btn-primary{background:var(--accent);color:var(--on-accent);width:100%}
+.btn-primary:disabled{opacity:.45;cursor:default}
+.btn-quiet{background:var(--surface);border:1px solid var(--line)}
+.note{color:var(--muted);font-size:.9rem;margin:0;text-align:center}
+
+/* frequency bands */
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;margin:28px 0 10px}
+.sec-h h2{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:700}
+.sec-h span{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.bands{display:grid;gap:9px}
+.band{display:grid;grid-template-columns:5.6rem 1fr 3.2rem;gap:10px;align-items:center;font-size:.85rem;font-variant-numeric:tabular-nums}
+.band .lbl{color:var(--muted)}
+.band .pct{text-align:right;font-weight:600}
+.bar{height:10px;border-radius:5px;background:var(--line);display:flex;overflow:hidden}
+.bar i{display:block;height:100%}
+.bar .k{background:var(--good)} .bar .l{background:var(--accent);opacity:.75}
+.band.locked{opacity:.45}
+.band.locked .bar{background:repeating-linear-gradient(135deg,var(--line) 0 4px,transparent 4px 8px)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.unlock{margin-top:16px;display:grid;gap:10px;background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:14px}
+.unlock p{margin:0;font-size:.92rem}
+
+/* study */
+.study{display:flex;flex-direction:column;min-height:calc(100dvh - 40px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+body.studying .wrap{padding-block:12px 16px}
+.sbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.x{background:none;border:0;padding:8px;margin-left:-8px;color:var(--muted);font-size:.95rem;font-weight:600}
+.mini{display:flex;gap:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.mini span.cur{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
+.stage{flex:1;display:flex;flex-direction:column;justify-content:center;perspective:1400px}
+.flash{position:relative;width:100%;min-height:clamp(260px,52vh,400px);transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.2,1);cursor:pointer;border:0;background:none;padding:0;text-align:left}
+.flash.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--card);border-radius:6px;box-shadow:0 1px 0 var(--line),0 18px 36px -20px var(--shade);display:flex;flex-direction:column;overflow:hidden}
+.face.back{transform:rotateY(180deg)}
+.face .top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 10px;font-size:.75rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;border-bottom:2px solid var(--margin)}
+.face .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;padding:18px 22px 26px;text-align:center;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--rule) 31px 32px);background-position:0 6px}
+.term{font-family:var(--f-word);font-weight:600;line-height:1.15;overflow-wrap:anywhere;font-size:3rem;letter-spacing:-.01em}
+.term.m{font-size:2.2rem}.term.s{font-size:1.6rem}
+.sub{color:var(--muted);font-size:.95rem}
+.prompt{color:var(--muted);font-family:var(--f-word);font-size:1.15rem}
+.also{font-size:.85rem;color:var(--muted)}
+.also b{color:var(--ink);font-weight:600}
+.say{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.85rem;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.say svg{width:16px;height:16px}
+.tap{text-align:center;color:var(--muted);font-size:.85rem;margin:14px 0 0}
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px;padding-bottom:env(safe-area-inset-bottom,0px)}
+.grades button{border:1.5px solid currentColor;background:var(--card);border-radius:10px;padding:10px 4px;display:grid;gap:2px;font-weight:700}
+.grades small{font-weight:500;font-size:.78rem;opacity:.85;font-variant-numeric:tabular-nums}
+.g1{color:var(--again)}.g2{color:var(--hard)}.g3{color:var(--good)}.g4{color:var(--easy)}
+.reveal{margin-top:18px}
+.done{text-align:center;display:grid;gap:14px;justify-items:center}
+.done .term{font-size:2.4rem}
+.done .btn{width:100%;max-width:320px}
+
+/* words */
+.search{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 14px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.list{list-style:none;margin:0;padding:0;background:var(--card);border-radius:12px;overflow:hidden}
+.list li{display:grid;grid-template-columns:2.6rem 1fr auto;gap:10px;align-items:center;padding:11px 14px;border-top:1px solid var(--line);cursor:pointer}
+.list li:first-child{border-top:0}
+.list .rk{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.list .w{min-width:0}
+.list .w b{font-family:var(--f-word);font-weight:600;font-size:1.05rem}
+.list .w div{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
+.st{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.st.known{color:var(--good)}.st.learn{color:var(--accent)}.st.lock{color:var(--muted);opacity:.7}.st.new{color:var(--muted)}
+.count{color:var(--muted);font-size:.85rem;margin:0 0 10px}
+
+/* options */
+.opt{background:var(--card);border-radius:12px;padding:16px;display:grid;gap:10px;margin-bottom:14px}
+.opt h3{margin:0;font-size:1rem}
+.opt p{margin:0;color:var(--muted);font-size:.88rem}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 10px;font-weight:600;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .btn{flex:1 1 140px}
+textarea{width:100%;min-height:84px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:10px;font-size:.78rem;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+.msg{font-size:.88rem;font-weight:600;color:var(--good);margin:0}
+.msg.err{color:var(--again)}
+.danger{color:var(--again)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.toggle input{width:22px;height:22px;accent-color:var(--accent)}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px max(16px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.tabs a{flex:1;max-width:180px;text-align:center;text-decoration:none;color:var(--muted);font-size:.78rem;font-weight:600;padding:6px 0;display:grid;justify-items:center;gap:2px}
+.tabs a svg{width:22px;height:22px}
+.tabs a[aria-current="page"]{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.flash{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <!-- TODAY -->
+  <section class="view" id="v-today">
+    <header class="mast"><h1>Mil Palabras<span>.</span></h1><p id="seenLine"></p></header>
+    <div class="today">
+      <div class="tally">
+        <div><b class="c-new" id="tNew">0</b><small>New</small></div>
+        <div><b class="c-learn" id="tLearn">0</b><small>Learning</small></div>
+        <div><b class="c-due" id="tDue">0</b><small>Review</small></div>
+      </div>
+      <button class="btn btn-primary" id="goStudy">Study now</button>
+      <p class="note" id="todayNote"></p>
+    </div>
+    <div class="sec-h"><h2>Progress by frequency rank</h2><span id="knownLine"></span></div>
+    <div class="bands" id="bands"></div>
+    <div class="legend"><span><i style="background:var(--good)"></i>Known (3+ week interval)</span><span><i style="background:var(--accent);opacity:.75"></i>Learning</span><span><i style="background:var(--line)"></i>Not seen</span></div>
+    <div class="unlock" id="unlock" hidden>
+      <p id="unlockText"></p>
+      <button class="btn btn-quiet" id="unlockBtn"></button>
+    </div>
+  </section>
+
+  <!-- STUDY -->
+  <section class="view study" id="v-study" hidden>
+    <div class="sbar">
+      <button class="x" id="closeStudy" aria-label="Close study session">✕ Close</button>
+      <div class="mini"><span class="c-new" id="sNew">0</span><span class="c-learn" id="sLearn">0</span><span class="c-due" id="sDue">0</span></div>
+    </div>
+    <div class="stage" id="stage">
+      <button class="flash" id="flash" aria-live="polite">
+        <div class="face front"><div class="top"><span id="fDir"></span><span id="fRank"></span></div><div class="body" id="fBody"></div></div>
+        <div class="face back"><div class="top"><span id="bDir"></span><span id="bRank"></span></div><div class="body" id="bBody"></div></div>
+      </button>
+      <p class="tap" id="tapHint">Tap the card to flip</p>
+      <button class="btn btn-primary reveal" id="reveal">Show answer</button>
+      <div class="grades" id="grades" hidden>
+        <button class="g1" data-g="1">Again<small id="i1"></small></button>
+        <button class="g2" data-g="2">Hard<small id="i2"></small></button>
+        <button class="g3" data-g="3">Good<small id="i3"></small></button>
+        <button class="g4" data-g="4">Easy<small id="i4"></small></button>
+      </div>
+    </div>
+    <div class="stage done" id="done" hidden></div>
+  </section>
+
+  <!-- WORDS -->
+  <section class="view" id="v-words" hidden>
+    <header class="mast"><h1>Words</h1><p>Tap a word to hear it</p></header>
+    <input class="search" id="q" type="search" placeholder="Search Spanish or English" autocomplete="off">
+    <div class="chips" id="chips">
+      <button class="chip" data-f="all" aria-pressed="true">All</button>
+      <button class="chip" data-f="learn" aria-pressed="false">Learning</button>
+      <button class="chip" data-f="known" aria-pressed="false">Known</button>
+      <button class="chip" data-f="new" aria-pressed="false">Not seen</button>
+    </div>
+    <p class="count" id="wCount"></p>
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <!-- OPTIONS -->
+  <section class="view" id="v-options" hidden>
+    <header class="mast"><h1>Options</h1></header>
+    <div class="opt"><h3>Card direction</h3><p>Which side of the card you see first.</p>
+      <div class="seg" id="optDir"><button data-v="es">Spanish → English</button><button data-v="en">English → Spanish</button><button data-v="mix">Both, mixed</button></div></div>
+    <div class="opt"><h3>New words per day</h3>
+      <div class="seg" id="optPer"><button data-v="5">5</button><button data-v="10">10</button><button data-v="15">15</button><button data-v="20">20</button><button data-v="30">30</button></div></div>
+    <div class="opt"><h3>Word range</h3><p>New words come from the top of this range, most common first.</p>
+      <select id="optLimit" class="search"></select></div>
+    <div class="opt"><h3>Pronunciation</h3>
+      <div class="seg" id="optVoice"><button data-v="es-MX">Latin America</button><button data-v="es-ES">Spain</button></div>
+      <label class="toggle"><span>Read Spanish aloud automatically</span><input type="checkbox" id="optAuto"></label>
+      <p id="voiceNote"></p></div>
+    <div class="opt"><h3>Back up progress</h3><p>Progress is saved in this browser only. Copy the code to move it to another device or keep a backup.</p>
+      <div class="row"><button class="btn btn-quiet" id="mkCode">Copy backup code</button><button class="btn btn-quiet" id="useCode">Restore from code</button></div>
+      <textarea id="code" placeholder="Backup code appears here. Paste a code here to restore." spellcheck="false"></textarea>
+      <p class="msg" id="codeMsg" hidden></p></div>
+    <div class="opt"><h3>Reset</h3><p>Erase all progress and start over from word 1.</p>
+      <div class="row" id="resetRow"><button class="btn btn-quiet danger" id="reset1">Reset progress</button></div></div>
+    <div class="opt"><h3>How the scheduling works</h3><p>This uses spaced repetition (the SM-2 method behind Anki). Missed words come back within minutes and keep coming back until they stick. Each time you get a word right, the wait before you see it again grows, so words you know well show up less and less.</p></div>
+  </section>
+</div>
+
+<nav class="tabs" id="tabs">
+  <a href="#" data-r=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="13" rx="2"/><path d="M4 9h16"/></svg>Today</a>
+  <a href="#words" data-r="words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 6h14M5 12h14M5 18h9"/></svg>Words</a>
+  <a href="#options" data-r="options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Options</a>
+</nav>
+
+<script>
+const DECK = [["de","of, from"],["el / la","the (singular)"],["que","that, which, than"],["y","and"],["a","to, at"],["en","in, on, at"],["un / una","a, an; one"],["ser","to be (identity, traits)"],["se","oneself, itself (reflexive)"],["no","no, not"],["haber","to have (auxiliary); hay = there is/are"],["por","by, for, through, because of"],["con","with"],["su","his, her, its, their, your (formal)"],["para","for, in order to"],["como","like, as"],["estar","to be (states, location)"],["tener","to have"],["le","to him, to her, to you (formal)"],["lo","it, him; the (neuter)"],["todo","all, every, everything"],["pero","but"],["más","more, most"],["hacer","to do, to make"],["o","or"],["poder","to be able to, can"],["decir","to say, to tell"],["este","this"],["ir","to go"],["otro","other, another"],["ese","that"],["los / las","the (plural)"],["si","if, whether"],["me","me, to me, myself"],["ya","already, now"],["ver","to see"],["porque","because"],["dar","to give"],["cuando","when"],["él","he, him"],["muy","very"],["sin","without"],["vez","time, occasion (una vez = once)"],["mucho","much, a lot, many"],["saber","to know (facts, how to)"],["qué","what"],["sobre","on, about, over"],["mi","my"],["alguno","some, any"],["mismo","same; -self"],["yo","I"],["también","also, too"],["hasta","until, up to, even"],["año","year"],["dos","two"],["querer","to want, to love"],["entre","between, among"],["así","like this, so, thus"],["primero","first"],["desde","since, from"],["grande","big, large, great"],["eso","that (neuter, idea)"],["ni","nor, not even"],["nos","us, to us, ourselves"],["llegar","to arrive, to reach"],["pasar","to pass, to happen, to spend (time)"],["tiempo","time; weather"],["ella","she, her"],["sí","yes"],["día","day"],["uno","one"],["bien","well, fine"],["poco","little, few"],["deber","must, to have to; to owe"],["entonces","then, so"],["poner","to put, to place"],["cosa","thing"],["tanto","so much, so many"],["hombre","man"],["parecer","to seem, to look like"],["nuestro","our"],["tan","so, as (tan... como = as... as)"],["donde","where"],["ahora","now"],["parte","part"],["después","after, afterwards"],["vida","life"],["quedar","to stay, to remain; to be left"],["siempre","always"],["creer","to believe, to think"],["hablar","to speak, to talk"],["llevar","to carry, to take, to wear"],["dejar","to leave (behind), to let"],["nada","nothing"],["cada","each, every"],["seguir","to follow, to continue"],["menos","less, fewer; except"],["nuevo","new"],["encontrar","to find"],["algo","something"],["solo","only, just; alone"],["nosotros","we, us"],["casa","house, home"],["mundo","world"],["llamar","to call, to name"],["venir","to come"],["pensar","to think"],["salir","to leave, to go out"],["volver","to return, to come back"],["tomar","to take, to drink"],["conocer","to know (people, places), to meet"],["país","country"],["mujer","woman, wife"],["tú","you (informal)"],["te","you, to you (informal)"],["aquí","here"],["bueno","good"],["nunca","never"],["vivir","to live"],["sentir","to feel; to be sorry"],["tres","three"],["forma","form, shape, way"],["caso","case"],["lugar","place"],["mientras","while"],["último","last"],["contra","against"],["tratar","to try, to treat"],["mirar","to look at, to watch"],["contar","to count; to tell (a story)"],["momento","moment"],["hoy","today"],["mayor","older, bigger, greater"],["trabajo","work, job"],["hijo","son, child"],["esperar","to wait, to hope, to expect"],["noche","night"],["durante","during"],["ciudad","city"],["gente","people"],["empezar","to begin, to start"],["buscar","to look for, to search"],["existir","to exist"],["entrar","to enter, to go in"],["trabajar","to work"],["escribir","to write"],["perder","to lose; to miss (a bus)"],["ellos","they, them"],["usted","you (formal)"],["cuál","which, which one"],["bajo","low, short; under"],["mejor","better, best"],["tal","such"],["antes","before"],["agua","water"],["punto","point, dot"],["historia","history, story"],["dios","God, god"],["nombre","name"],["mano","hand"],["ocurrir","to happen, to occur"],["entender","to understand"],["pedir","to ask for, to order"],["recibir","to receive"],["recordar","to remember, to remind"],["terminar","to finish, to end"],["padre","father"],["madre","mother"],["alguien","someone, somebody"],["cuánto","how much, how many"],["casi","almost"],["ahí","there"],["pues","well, then; since"],["nadie","nobody, no one"],["manera","way, manner"],["problema","problem"],["cierto","certain, true"],["lado","side"],["aunque","although, even if"],["conseguir","to get, to obtain, to achieve"],["aparecer","to appear"],["permitir","to allow, to permit"],["comenzar","to begin, to commence"],["servir","to serve, to be useful"],["sacar","to take out, to pull out"],["necesitar","to need"],["mantener","to maintain, to keep"],["resultar","to turn out, to result"],["leer","to read"],["caer","to fall"],["cambiar","to change"],["presentar","to present, to introduce"],["crear","to create"],["abrir","to open"],["considerar","to consider"],["oír","to hear"],["acabar","to finish; acabar de = to have just"],["menor","younger, smaller, lesser"],["general","general"],["dentro","inside, within"],["fin","end"],["claro","clear; of course"],["largo","long"],["igual","equal, same"],["mal","badly; bad"],["grupo","group"],["hora","hour; time (what time)"],["semana","week"],["mes","month"],["cuenta","account; bill, check"],["cuerpo","body"],["ojo","eye"],["palabra","word"],["niño","child, boy"],["calle","street"],["puerta","door"],["gobierno","government"],["idea","idea"],["tierra","land, earth, ground"],["fuerza","strength, force"],["razón","reason; tener razón = to be right"],["cabeza","head"],["cuatro","four"],["cinco","five"],["cien","one hundred"],["mil","thousand"],["ninguno","none, not any"],["propio","own; proper"],["cualquier","any, whichever"],["tampoco","neither, not either"],["luego","then, later"],["pronto","soon"],["lejos","far"],["cerca","near, close"],["además","besides, in addition"],["hacia","toward"],["según","according to"],["incluso","even, including"],["ayer","yesterday"],["mañana","tomorrow; morning"],["tarde","afternoon, evening; late"],["todavía","still, yet"],["convertir","to convert, to turn into"],["ganar","to win, to earn"],["formar","to form, to shape"],["traer","to bring"],["partir","to depart; to split"],["morir","to die"],["aceptar","to accept"],["realizar","to carry out, to achieve"],["suponer","to suppose, to assume"],["comprender","to understand; to include"],["lograr","to manage to, to achieve"],["explicar","to explain"],["preguntar","to ask (a question)"],["tocar","to touch; to play (an instrument)"],["reconocer","to recognize, to admit"],["estudiar","to study"],["alcanzar","to reach, to attain"],["nacer","to be born"],["dirigir","to direct, to lead"],["correr","to run"],["utilizar","to use, to utilize"],["pagar","to pay"],["ayudar","to help"],["gustar","to be pleasing (me gusta = I like)"],["jugar","to play (games, sports)"],["escuchar","to listen (to)"],["cumplir","to fulfill; to turn (an age)"],["ofrecer","to offer"],["descubrir","to discover"],["levantar","to raise, to lift"],["intentar","to try, to attempt"],["usar","to use"],["olvidar","to forget"],["amigo","friend"],["familia","family"],["amor","love"],["guerra","war"],["muerte","death"],["verdad","truth"],["pueblo","town, village; a people"],["nivel","level"],["número","number"],["persona","person"],["pregunta","question"],["respuesta","answer"],["señor","sir, Mr., gentleman"],["señora","madam, Mrs., lady"],["tipo","type, kind; guy"],["paso","step, pace"],["camino","path, road, way"],["mar","sea"],["sol","sun"],["luz","light"],["aire","air"],["fuego","fire"],["noticia","piece of news"],["dinero","money"],["precio","price"],["libro","book"],["papel","paper; role"],["mesa","table"],["coche","car"],["cara","face"],["voz","voice"],["pie","foot"],["corazón","heart"],["sangre","blood"],["boca","mouth"],["pelo","hair"],["brazo","arm"],["pierna","leg"],["espalda","back"],["diez","ten"],["seis","six"],["siete","seven"],["ocho","eight"],["nueve","nine"],["veinte","twenty"],["mitad","half"],["segundo","second"],["tercero","third"],["medio","half; middle; means"],["lunes","Monday"],["martes","Tuesday"],["miércoles","Wednesday"],["jueves","Thursday"],["viernes","Friday"],["sábado","Saturday"],["domingo","Sunday"],["pequeño","small, little"],["alto","tall, high"],["viejo","old"],["joven","young"],["importante","important"],["posible","possible"],["difícil","difficult"],["fácil","easy"],["malo","bad"],["blanco","white"],["negro","black"],["rojo","red"],["verde","green"],["azul","blue"],["amarillo","yellow"],["color","color"],["feliz","happy"],["triste","sad"],["contento","pleased, glad"],["cansado","tired"],["listo","ready; clever"],["seguro","sure, safe; insurance"],["libre","free"],["lleno","full"],["vacío","empty"],["rico","rich; delicious"],["pobre","poor"],["caro","expensive"],["barato","cheap"],["caliente","hot"],["frío","cold"],["fuerte","strong"],["débil","weak"],["rápido","fast, quick"],["lento","slow"],["temprano","early"],["bonito","pretty, nice"],["hermoso","beautiful"],["feo","ugly"],["limpio","clean"],["sucio","dirty"],["cerrar","to close"],["comer","to eat"],["beber","to drink"],["dormir","to sleep"],["andar","to walk; to go (function)"],["caminar","to walk"],["comprar","to buy"],["vender","to sell"],["enseñar","to teach, to show"],["aprender","to learn"],["mostrar","to show"],["mover","to move"],["cocinar","to cook"],["lavar","to wash"],["limpiar","to clean"],["viajar","to travel"],["visitar","to visit"],["manejar","to drive; to handle"],["conducir","to drive; to lead"],["subir","to go up, to climb, to upload"],["bajar","to go down, to lower"],["cantar","to sing"],["bailar","to dance"],["nadar","to swim"],["reír","to laugh"],["llorar","to cry"],["sonreír","to smile"],["amar","to love"],["odiar","to hate"],["preferir","to prefer"],["elegir","to choose, to elect"],["decidir","to decide"],["cortar","to cut"],["romper","to break"],["construir","to build"],["cuidar","to take care of"],["preparar","to prepare"],["probar","to try, to taste, to prove"],["mandar","to send; to order"],["enviar","to send"],["contestar","to answer"],["responder","to respond, to answer"],["repetir","to repeat"],["tardar","to take (time), to be late"],["faltar","to be missing, to lack"],["importar","to matter; to import"],["interesar","to interest"],["doler","to hurt, to ache"],["encantar","to delight (me encanta = I love it)"],["molestar","to bother"],["preocupar","to worry"],["casar","to marry (casarse = to get married)"],["despertar","to wake up"],["acostar","to put to bed (acostarse = to go to bed)"],["sentar","to seat (sentarse = to sit down)"],["vestir","to dress"],["duchar","to shower"],["quitar","to remove, to take off"],["cubrir","to cover"],["guardar","to keep, to save, to put away"],["compartir","to share"],["acercar","to bring closer (acercarse = to approach)"],["añadir","to add"],["apoyar","to support, to lean"],["aumentar","to increase"],["avanzar","to advance, to move forward"],["bastar","to be enough"],["celebrar","to celebrate"],["cometer","to commit (a mistake, crime)"],["conservar","to keep, to preserve"],["contener","to contain"],["continuar","to continue"],["corresponder","to correspond, to belong to"],["crecer","to grow"],["dedicar","to dedicate"],["defender","to defend"],["depender","to depend"],["desaparecer","to disappear"],["desear","to wish, to desire"],["destacar","to stand out, to highlight"],["detener","to stop, to arrest"],["devolver","to return (something), to give back"],["dudar","to doubt"],["echar","to throw, to toss"],["evitar","to avoid"],["exigir","to demand, to require"],["expresar","to express"],["gastar","to spend (money), to wear out"],["imaginar","to imagine"],["impedir","to prevent"],["indicar","to indicate, to point out"],["lanzar","to throw, to launch"],["marcar","to mark, to dial, to score"],["matar","to kill"],["meter","to put in, to insert"],["notar","to notice"],["obligar","to force, to oblige"],["observar","to observe"],["obtener","to obtain, to get"],["ocupar","to occupy, to take up"],["organizar","to organize"],["pertenecer","to belong"],["plantear","to raise (an issue), to pose"],["proponer","to propose"],["proteger","to protect"],["quejarse","to complain"],["recoger","to pick up, to collect"],["reducir","to reduce"],["referir","to refer"],["regresar","to return, to go back"],["representar","to represent"],["resolver","to solve, to resolve"],["reunir","to gather, to meet"],["sufrir","to suffer"],["sugerir","to suggest"],["superar","to overcome, to exceed"],["surgir","to arise, to emerge"],["tirar","to throw, to pull; to throw away"],["valer","to be worth, to cost"],["vencer","to defeat, to expire"],["volar","to fly"],["votar","to vote"],["apagar","to turn off, to put out"],["encender","to turn on, to light"],["llenar","to fill"],["mejorar","to improve"],["señalar","to point out, to signal"],["soñar","to dream"],["pegar","to hit; to stick, to paste"],["saltar","to jump"],["caber","to fit"],["colocar","to place, to put"],["contribuir","to contribute"],["desarrollar","to develop"],["describir","to describe"],["establecer","to establish"],["incluir","to include"],["mencionar","to mention"],["producir","to produce"],["publicar","to publish"],["recomendar","to recommend"],["asegurar","to assure, to make sure, to insure"],["confiar","to trust"],["cuidado","care; ¡cuidado! = careful!"],["atención","attention"],["esfuerzo","effort"],["fe","faith"],["fondo","bottom, back; fund"],["frente","front; forehead"],["gana","desire (tener ganas de = to feel like)"],["gusto","taste, pleasure (mucho gusto = nice to meet you)"],["imagen","image, picture"],["importancia","importance"],["individuo","individual"],["investigación","research, investigation"],["juicio","judgment; trial"],["línea","line"],["marido","husband"],["materia","matter, subject"],["miembro","member"],["mirada","look, gaze"],["movimiento","movement"],["negocio","business, deal"],["nota","note; grade"],["obra","work (of art), construction"],["oportunidad","opportunity, chance"],["origen","origin"],["pareja","couple, partner"],["paciente","patient"],["pena","sorrow, pity (vale la pena = it's worth it)"],["periódico","newspaper"],["personaje","character (in a story)"],["plaza","square, plaza"],["policía","police; police officer"],["premio","prize, award"],["prueba","test, proof"],["puesto","position, post; stall"],["recuerdo","memory, souvenir"],["red","network; net"],["riesgo","risk"],["ruido","noise"],["secreto","secret"],["seguridad","security, safety"],["señal","signal, sign"],["silencio","silence"],["sitio","site, place"],["sonido","sound"],["superficie","surface"],["técnica","technique"],["teoría","theory"],["uso","use"],["vista","view, sight"],["voluntad","will, willpower"],["capital","capital"],["carta","letter; menu"],["clave","key (figurative), code"],["compañero","companion, classmate, coworker"],["compañía","company"],["crisis","crisis"],["dato","piece of data, fact"],["deseo","desire, wish"],["destino","destination; destiny"],["dueño","owner"],["error","mistake, error"],["escena","scene"],["figura","figure"],["función","function"],["gesto","gesture"],["hogar","home, household"],["humano","human"],["lengua","tongue; language"],["idioma","language"],["letra","letter (of alphabet); lyrics"],["llave","key"],["mensaje","message"],["metro","meter; subway"],["motivo","reason, motive"],["muerto","dead"],["página","page"],["pantalla","screen"],["pensamiento","thought"],["piel","skin"],["pista","track; clue"],["pobreza","poverty"],["producto","product"],["propuesta","proposal"],["público","public; audience"],["rey","king"],["reina","queen"],["sala","living room, hall"],["suelo","floor, ground, soil"],["taller","workshop"],["teatro","theater"],["trato","deal, treatment"],["vuelta","turn, return; dar una vuelta = take a walk"],["alegría","joy, happiness"],["cariño","affection; darling"],["belleza","beauty"],["dolor de cabeza","headache"],["anterior","previous, earlier"],["actual","current, present-day"],["central","central"],["científico","scientific; scientist"],["claro que sí","of course"],["común","common"],["completo","complete, full"],["concreto","specific, concrete"],["correcto","correct"],["diferente","different"],["distinto","different, distinct"],["económico","economic; inexpensive"],["enorme","huge, enormous"],["entero","whole, entire"],["especial","special"],["extraño","strange"],["falso","false, fake"],["grave","serious, grave"],["inglés","English"],["español","Spanish"],["internacional","international"],["interesante","interesting"],["local","local"],["nacional","national"],["natural","natural"],["necesario","necessary"],["normal","normal"],["oscuro","dark"],["perfecto","perfect"],["personal","personal"],["político","political; politician"],["precioso","lovely, precious"],["principal","main, principal"],["privado","private"],["profundo","deep"],["próximo","next"],["raro","strange, rare"],["real","real; royal"],["reciente","recent"],["santo","holy, saint"],["serio","serious"],["simple","simple"],["suficiente","enough, sufficient"],["tranquilo","calm, quiet"],["único","only, unique"],["verdadero","true, real"],["vivo","alive, lively"],["ancho","wide"],["duro","hard"],["suave","soft, smooth, gentle"],["dulce","sweet"],["pesado","heavy; tiresome"],["ligero","light (weight)"],["loco","crazy"],["guapo","handsome, good-looking"],["gordo","fat"],["delgado","thin"],["corto","short (length)"],["mayoría","majority"],["menos mal","thank goodness"],["comida","food, meal"],["desayuno","breakfast"],["almuerzo","lunch"],["cena","dinner"],["pan","bread"],["carne","meat"],["pollo","chicken"],["pescado","fish (food)"],["pez","fish (live)"],["fruta","fruit"],["manzana","apple; city block"],["naranja","orange"],["verdura","vegetable"],["arroz","rice"],["huevo","egg"],["leche","milk"],["queso","cheese"],["café","coffee; café"],["té","tea"],["vino","wine"],["cerveza","beer"],["azúcar","sugar"],["sal","salt"],["plato","plate, dish"],["vaso","glass (for drinking)"],["taza","cup, mug"],["cocina","kitchen; cooking"],["baño","bathroom; bath"],["cuarto","room; quarter"],["habitación","room, bedroom"],["cama","bed"],["silla","chair"],["ventana","window"],["pared","wall"],["piso","floor; apartment"],["techo","roof, ceiling"],["jardín","garden, yard"],["árbol","tree"],["flor","flower"],["planta","plant; floor (of building)"],["hoja","leaf; sheet of paper"],["montaña","mountain"],["río","river"],["lago","lake"],["bosque","forest"],["campo","field, countryside"],["playa","beach"],["isla","island"],["cielo","sky; heaven"],["lluvia","rain"],["nieve","snow"],["viento","wind"],["calor","heat"],["estrella","star"],["luna","moon"],["animal","animal"],["perro","dog"],["gato","cat"],["pájaro","bird"],["escuela","school"],["clase","class"],["profesor","teacher, professor"],["estudiante","student"],["universidad","university"],["oficina","office"],["empresa","company, business"],["tienda","store, shop; tent"],["mercado","market"],["banco","bank; bench"],["hospital","hospital"],["iglesia","church"],["restaurante","restaurant"],["hotel","hotel"],["aeropuerto","airport"],["estación","station; season"],["tren","train"],["autobús","bus"],["avión","airplane"],["barco","boat, ship"],["bicicleta","bicycle"],["viaje","trip, journey"],["billete","ticket; bill (money)"],["boleto","ticket (Latin America)"],["maleta","suitcase"],["mapa","map"],["dirección","address; direction"],["derecha","right (direction)"],["izquierda","left (direction)"],["derecho","right (legal); straight"],["recto","straight"],["esquina","corner"],["centro","center, downtown"],["norte","north"],["sur","south"],["el este","east"],["oeste","west"],["ropa","clothes"],["camisa","shirt"],["zapato","shoe"],["pantalón","pants, trousers"],["vestido","dress"],["bolsa","bag"],["teléfono","telephone"],["computadora","computer"],["música","music"],["película","movie, film"],["juego","game"],["deporte","sport"],["fútbol","soccer"],["equipo","team; equipment"],["partido","match, game; political party"],["fiesta","party, celebration"],["regalo","gift, present"],["cumpleaños","birthday"],["hermano","brother"],["hermana","sister"],["abuelo","grandfather"],["abuela","grandmother"],["tío","uncle"],["tía","aunt"],["primo","cousin"],["esposo","husband"],["esposa","wife"],["novio","boyfriend; groom"],["novia","girlfriend; bride"],["bebé","baby"],["chico","boy, kid; small"],["chica","girl"],["muchacho","boy, young man"],["vecino","neighbor"],["gracias","thank you"],["por favor","please"],["hola","hello"],["adiós","goodbye"],["perdón","sorry, excuse me"],["lo siento","I'm sorry"],["de nada","you're welcome"],["buenos días","good morning"],["buenas noches","good night"],["salud","health; cheers, bless you"],["médico","doctor"],["enfermo","sick, ill"],["dolor","pain"],["medicina","medicine"],["mente","mind"],["alma","soul"],["sueño","dream; sleepiness"],["miedo","fear"],["hambre","hunger"],["sed","thirst"],["suerte","luck"],["ayuda","help"],["hecho","fact; done, made"],["cambio","change; exchange"],["desarrollo","development"],["proceso","process"],["sistema","system"],["servicio","service"],["sociedad","society"],["economía","economy"],["política","politics; policy"],["ley","law"],["presidente","president"],["estado","state; condition"],["nación","nation"],["población","population"],["situación","situation"],["condición","condition"],["relación","relationship, relation"],["información","information"],["educación","education"],["cultura","culture"],["arte","art"],["ciencia","science"],["interés","interest"],["valor","value; courage"],["fin de semana","weekend"],["tema","topic, theme"],["asunto","matter, affair"],["cuestión","question, issue"],["objeto","object"],["medida","measure, measurement"],["cantidad","quantity, amount"],["resto","rest, remainder"],["total","total"],["serie","series"],["orden","order"],["base","base, basis"],["paz","peace"],["libertad","freedom, liberty"],["necesidad","need, necessity"],["posibilidad","possibility"],["experiencia","experience"],["conocimiento","knowledge"],["memoria","memory"],["sentido","sense, meaning"],["sentimiento","feeling"],["opinión","opinion"],["acuerdo","agreement; de acuerdo = OK, agreed"],["decisión","decision"],["acción","action"],["actividad","activity"],["proyecto","project"],["plan","plan"],["programa","program"],["resultado","result"],["efecto","effect"],["causa","cause"],["diferencia","difference"],["ejemplo","example; por ejemplo = for example"],["modo","way, mode"],["estilo","style"],["calidad","quality"],["tamaño","size"],["peso","weight; peso (currency)"],["altura","height"],["espacio","space"],["área","area"],["zona","zone, area"],["región","region"],["frontera","border"],["carretera","highway, road"],["puente","bridge"],["edificio","building"],["naturaleza","nature"],["medio ambiente","environment"],["pasado","past"],["futuro","future"],["presente","present"],["siglo","century"],["época","era, time, period"],["edad","age"],["minuto","minute"],["instante","instant"],["rato","while, short time"],["principio","beginning; principle"],["final","end; final"],["mediodía","noon"],["madrugada","early morning, dawn"],["fecha","date"],["invierno","winter"],["verano","summer"],["primavera","spring"],["otoño","autumn, fall"],["enero","January"],["febrero","February"],["marzo","March"],["abril","April"],["mayo","May"],["junio","June"],["julio","July"],["agosto","August"],["septiembre","September"],["octubre","October"],["noviembre","November"],["diciembre","December"],["treinta","thirty"],["cuarenta","forty"],["cincuenta","fifty"],["millón","million"],["once","eleven"],["doce","twelve"],["quince","fifteen"],["cómo","how"],["dónde","where (question)"],["cuándo","when (question)"],["quién","who"],["por qué","why"],["aquel","that (over there)"],["esto","this (neuter, idea)"],["aquello","that (neuter, far)"],["nada más","nothing else; only"],["algo más","something else"],["ellas","they, them (fem.)"],["vosotros","you all (Spain, informal)"],["ustedes","you all"],["les","to them, to you all"],["tu","your (informal)"],["mío","mine"],["tuyo","yours (informal)"],["suyo","his, hers, theirs, yours (formal)"],["conmigo","with me"],["contigo","with you (informal)"],["quien","who (relative)"],["cual","which (relative)"],["cuyo","whose"],["demasiado","too, too much"],["bastante","quite, enough"],["apenas","hardly, barely"],["quizás","perhaps, maybe"],["tal vez","maybe, perhaps"],["realmente","really"],["especialmente","especially"],["simplemente","simply, just"],["solamente","only"],["exactamente","exactly"],["rápidamente","quickly"],["finalmente","finally"],["sin embargo","however, nevertheless"],["mientras tanto","meanwhile"],["de repente","suddenly"],["a veces","sometimes"],["otra vez","again"],["de nuevo","again, anew"],["jamás","never, ever"],["allí","there"],["allá","over there"],["arriba","up, upstairs, above"],["abajo","down, downstairs, below"],["adelante","forward, ahead; come in"],["atrás","back, behind"],["delante","in front"],["detrás","behind"],["encima","on top"],["debajo","underneath"],["fuera","outside"],["afuera","outside, out"],["alrededor","around"],["junto","together; next to"],["sino","but rather"],["ante","before, in front of"],["tras","after, behind"],["excepto","except"],["llamada","call"],["foto","photo"],["internet","internet"],["pasaporte","passport"],["propina","tip (gratuity)"],["jefe","boss"]];
+const MIN = 60e3, DAY = 864e5;
+const STEPS = [1*MIN, 10*MIN], RELEARN = [10*MIN], AHEAD = 20*MIN, KNOWN = 21;
+const KEY = 'milpalabras.v1';
+const $ = id => document.getElementById(id);
+
+/* ---------- state ---------- */
+function defaults(){ return {v:1, cards:{}, limit:100, perDay:10, dir:'mix', voice:'es-MX', auto:false, day:-1, nt:0, bonus:0, rt:0}; }
+function load(){ try{ const r = localStorage.getItem(KEY); if(r) return Object.assign(defaults(), JSON.parse(r)); }catch(e){} return defaults(); }
+let S = load();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function today(now = Date.now()){ const d = new Date(now - 4*3600e3); return Math.floor((d.getTime() - d.getTimezoneOffset()*MIN) / DAY); }
+function rollover(){ const t = today(); if(S.day !== t){ S.day = t; S.nt = 0; S.bonus = 0; S.rt = 0; save(); } }
+
+/* ---------- scheduler (SM-2 style) ---------- */
+function grad(c, ivl, t){ c.s='review'; c.ivl=Math.max(1,ivl); c.dd=t+c.ivl; c.step=0; delete c.due; return c; }
+function apply(c0, g, now){
+  const c = Object.assign({s:'new', ease:2.5, ivl:0, step:0, lapses:0, reps:0}, c0 || {});
+  const t = today(now); c.reps++;
+  if(c.s === 'review'){
+    if(g === 1){ c.lapses++; c.ease = Math.max(1.3, c.ease-.2); c.ivl = Math.max(1, Math.round(c.ivl*.5)); c.s='relearn'; c.step=0; c.due=now+RELEARN[0]; return c; }
+    let ivl = g===2 ? Math.max(c.ivl+1, Math.round(c.ivl*1.2))
+            : g===3 ? Math.max(c.ivl+1, Math.round(c.ivl*c.ease))
+            :         Math.max(c.ivl+2, Math.round(c.ivl*c.ease*1.3));
+    if(g===2) c.ease = Math.max(1.3, c.ease-.15);
+    if(g===4) c.ease += .15;
+    c.ivl = Math.min(ivl, 3650); c.dd = t + c.ivl; return c;
+  }
+  const relearn = c.s === 'relearn', steps = relearn ? RELEARN : STEPS;
+  if(c.s === 'new'){ c.s='learn'; c.step=0; }
+  if(g === 1){ c.step=0; c.due = now + steps[0]; }
+  else if(g === 2){ c.due = now + (c.step+1 < steps.length ? (steps[c.step]+steps[c.step+1])/2 : steps[c.step]*1.5); }
+  else if(g === 3){ c.step++; if(c.step >= steps.length) return grad(c, relearn ? c.ivl : 1, t); c.due = now + steps[c.step]; }
+  else { return grad(c, relearn ? c.ivl+1 : 4, t); }
+  return c;
+}
+function fmt(c, now){
+  if(c.s === 'review'){ const d = c.dd - today(now); return d < 30 ? d+'d' : d < 365 ? (d/30).toFixed(d<60?1:0).replace('.0','')+'mo' : (d/365).toFixed(1).replace('.0','')+'y'; }
+  const m = Math.round((c.due-now)/MIN); return m < 1 ? '<1m' : m+'m';
+}
+
+/* ---------- queue ---------- */
+let lastId = null, pickN = 0;
+const isLearning = c => c.s==='learn' || c.s==='relearn';
+function newLeft(){ return Math.max(0, S.perDay + S.bonus - S.nt); }
+function nextNewId(){ if(!newLeft()) return null; for(let i=0;i<S.limit;i++) if(!S.cards[i]) return i; return null; }
+function unseenInRange(){ let n=0; for(let i=0;i<S.limit;i++) if(!S.cards[i]) n++; return n; }
+function counts(now = Date.now()){
+  const t = today(now); let learn=0, due=0;
+  for(const k in S.cards){ const c=S.cards[k]; if(isLearning(c)) learn++; else if(c.dd<=t) due++; }
+  return {learn, due, nw: Math.min(newLeft(), unseenInRange())};
+}
+function nextCard(now = Date.now()){
+  const t = today(now), L=[], R=[];
+  for(const k in S.cards){ const c=S.cards[k]; if(isLearning(c)) L.push(+k); else if(c.dd<=t) R.push(+k); }
+  const byDue = (a,b) => S.cards[a].due - S.cards[b].due;
+  const Ldue = L.filter(i => S.cards[i].due <= now).sort(byDue);
+  const lp = Ldue.filter(i => i !== lastId); if(lp.length) return lp[0];
+  const rp = R.filter(i => i !== lastId).sort((a,b) => S.cards[a].dd - S.cards[b].dd || a-b);
+  const nid = nextNewId();
+  if(rp.length && nid !== null){ pickN++; return pickN % 3 === 0 ? nid : rp[0]; }
+  if(rp.length) return rp[0];
+  if(nid !== null) return nid;
+  if(Ldue.length) return Ldue[0];
+  const ahead = L.filter(i => S.cards[i].due <= now + AHEAD).sort(byDue);
+  const ap = ahead.filter(i => i !== lastId);
+  return ap.length ? ap[0] : ahead.length ? ahead[0] : null;
+}
+function status(i){ const c=S.cards[i]; if(!c) return i<S.limit ? 'new' : 'lock'; return (c.s==='review' && c.ivl>=KNOWN) ? 'known' : 'learn'; }
+
+/* ---------- synonyms for English → Spanish cards ---------- */
+const keyOf = en => en.split(/[,;(]/)[0].trim().toLowerCase();
+const SYN = {};
+DECK.forEach(([es,en],i) => { const k = keyOf(en); (SYN[k] = SYN[k] || []).push(i); });
+
+/* ---------- speech ---------- */
+const canSpeak = 'speechSynthesis' in window;
+function speak(i){
+  if(!canSpeak) return;
+  try{
+    const u = new SpeechSynthesisUtterance(DECK[i][0].replace(/ \/ /g, ', '));
+    u.lang = S.voice; u.rate = .9;
+    const vs = speechSynthesis.getVoices();
+    const v = vs.find(v => v.lang.replace('_','-') === S.voice) || vs.find(v => v.lang.startsWith('es'));
+    if(v) u.voice = v;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+const SPK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
+const sayBtn = i => canSpeak ? `<span class="say" role="button" tabindex="0" data-say="${i}">${SPK}Listen</span>` : '';
+const esc = s => s.replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const size = s => s.length > 22 ? 's' : s.length > 12 ? 'm' : '';
+
+/* ---------- today view ---------- */
+function renderToday(){
+  rollover();
+  const c = counts();
+  $('tNew').textContent = c.nw; $('tLearn').textContent = c.learn; $('tDue').textContent = c.due;
+  const total = c.nw + c.learn + c.due;
+  $('goStudy').disabled = total === 0;
+  $('goStudy').textContent = total ? 'Study now' : 'All caught up';
+  let seen = 0, known = 0; for(const k in S.cards){ seen++; if(status(+k)==='known') known++; }
+  $('seenLine').textContent = `${seen} of ${DECK.length} seen`;
+  $('knownLine').textContent = `${known} known`;
+  if(total) $('todayNote').textContent = S.rt ? `${S.rt} answered today` : 'Missed words repeat sooner. Known words fade back.';
+  else if(unseenInRange() === 0) $('todayNote').textContent = 'You have met every word in your range.';
+  else $('todayNote').textContent = `Daily new-word limit reached. ${S.rt} answered today.`;
+  let html = '';
+  for(let b=0; b<10; b++){
+    const lo=b*100, hi=lo+100; let k=0, l=0;
+    for(let i=lo;i<hi;i++){ const st=status(i); if(st==='known') k++; else if(st==='learn') l++; }
+    const locked = lo >= S.limit;
+    html += `<div class="band${locked?' locked':''}"><span class="lbl">${lo+1}–${hi}</span><div class="bar" role="img" aria-label="${k} known, ${l} learning"><i class="k" style="width:${k}%"></i><i class="l" style="width:${l}%"></i></div><span class="pct">${locked ? '—' : (k+l)+'%'}</span></div>`;
+  }
+  $('bands').innerHTML = html;
+  const un = $('unlock');
+  if(unseenInRange() === 0 && S.limit < DECK.length){
+    un.hidden = false;
+    $('unlockText').textContent = `You've met all ${S.limit} words in your range. Keep reviewing, or add the next 100.`;
+    $('unlockBtn').textContent = `Add words ${S.limit+1}–${S.limit+100}`;
+  } else if(S.limit === 100 && unseenInRange() > 0){
+    un.hidden = false;
+    $('unlockText').textContent = 'You start with the 100 most common words. The next 100 open once you have seen these.';
+    $('unlockBtn').textContent = 'Open the next 100 now';
+  } else un.hidden = true;
+}
+$('unlockBtn').onclick = () => { S.limit = Math.min(DECK.length, S.limit+100); save(); renderToday(); };
+$('goStudy').onclick = () => { location.hash = 'study'; };
+
+/* ---------- study view ---------- */
+let cur = null, curDir = 'es', flipped = false;
+function renderMini(){
+  const c = counts();
+  $('sNew').textContent = c.nw; $('sLearn').textContent = c.learn; $('sDue').textContent = c.due;
+  ['sNew','sLearn','sDue'].forEach(id => $(id).classList.remove('cur'));
+  if(cur !== null){ const cc = S.cards[cur]; $(!cc ? 'sNew' : isLearning(cc) ? 'sLearn' : 'sDue').classList.add('cur'); }
+}
+function showCard(){
+  rollover();
+  cur = nextCard();
+  flipped = false; $('flash').classList.remove('flipped');
+  $('grades').hidden = true;
+  if(cur === null){ $('stage').hidden = true; $('done').hidden = false; renderDone(); renderMini(); return; }
+  $('stage').hidden = false; $('done').hidden = true;
+  $('reveal').hidden = false; $('tapHint').hidden = false;
+  curDir = S.dir === 'mix' ? (Math.random() < .5 ? 'es' : 'en') : S.dir;
+  const [es,en] = DECK[cur], isNew = !S.cards[cur];
+  const dirTxt = curDir === 'es' ? 'Español → English' : 'English → Español';
+  $('fDir').textContent = isNew ? 'New word' : dirTxt; $('bDir').textContent = dirTxt;
+  $('fRank').textContent = $('bRank').textContent = '#' + (cur+1);
+  const others = (SYN[keyOf(en)] || []).filter(i => i !== cur);
+  if(curDir === 'es'){
+    $('fBody').innerHTML = `<div class="term ${size(es)}" lang="es">${esc(es)}</div>${sayBtn(cur)}`;
+    $('bBody').innerHTML = `<div class="sub" lang="es">${esc(es)}</div><div class="term ${size(en)}">${esc(en)}</div>`;
+  } else {
+    $('fBody').innerHTML = `<div class="term ${size(en)}">${esc(en)}</div><div class="prompt">¿Cómo se dice?</div>`;
+    $('bBody').innerHTML = `<div class="sub">${esc(en)}</div><div class="term ${size(es)}" lang="es">${esc(es)}</div>${sayBtn(cur)}` +
+      (others.length ? `<div class="also">Also means this: ${others.map(i => `<b lang="es">${esc(DECK[i][0])}</b>`).join(', ')}</div>` : '');
+  }
+  if(S.auto && curDir === 'es') speak(cur);
+  const now = Date.now();
+  for(let g=1; g<=4; g++) $('i'+g).textContent = fmt(apply(S.cards[cur], g, now), now);
+  renderMini();
+}
+function flip(){
+  if(cur === null) return;
+  flipped = !flipped;
+  $('flash').classList.toggle('flipped', flipped);
+  if(flipped){ $('reveal').hidden = true; $('tapHint').hidden = true; $('grades').hidden = false; if(S.auto && curDir === 'en') speak(cur); }
+}
+function grade(g){
+  if(cur === null || !flipped) return;
+  const now = Date.now();
+  if(!S.cards[cur]) S.nt++;
+  S.cards[cur] = apply(S.cards[cur], g, now);
+  S.rt++; lastId = cur; save(); showCard();
+}
+function renderDone(){
+  const L = Object.values(S.cards).filter(isLearning);
+  let html = `<div class="term">¡Bien hecho!</div><p class="note">${S.rt} cards answered today.</p>`;
+  if(L.length){
+    const soon = Math.min(...L.map(c => c.due)), m = Math.max(1, Math.ceil((soon - Date.now())/MIN));
+    html += `<p class="note">${L.length} word${L.length>1?'s':''} still in learning. Next one is ready in ${m} min.</p><button class="btn btn-quiet" id="waitBtn">Check again</button>`;
+  }
+  if(unseenInRange() > 0) html += `<button class="btn btn-primary" id="moreBtn">Learn 5 more new words</button>`;
+  else if(S.limit < DECK.length) html += `<button class="btn btn-primary" id="nextBand">Add words ${S.limit+1}–${S.limit+100}</button>`;
+  html += `<button class="btn btn-quiet" id="homeBtn">Back to Today</button>`;
+  $('done').innerHTML = html;
+  const w=$('waitBtn'), mo=$('moreBtn'), nb=$('nextBand');
+  if(w) w.onclick = showCard;
+  if(mo) mo.onclick = () => { S.bonus += 5; save(); showCard(); };
+  if(nb) nb.onclick = () => { S.limit += 100; S.bonus += 5; save(); showCard(); };
+  $('homeBtn').onclick = () => { location.hash = ''; };
+}
+$('flash').onclick = e => { const s = e.target.closest('[data-say]'); if(s){ e.stopPropagation(); speak(+s.dataset.say); return; } flip(); };
+$('reveal').onclick = flip;
+$('grades').onclick = e => { const b = e.target.closest('[data-g]'); if(b) grade(+b.dataset.g); };
+$('closeStudy').onclick = () => { location.hash = ''; };
+document.addEventListener('keydown', e => {
+  if(route() !== 'study' || e.target.matches('input,textarea,select')) return;
+  if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); if(!flipped) flip(); else grade(3); }
+  else if(/^[1-4]$/.test(e.key)) grade(+e.key);
+  else if(e.key.toLowerCase() === 'p' && cur !== null) speak(cur);
+});
+
+/* ---------- words view ---------- */
+let filt = 'all';
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const NORM = DECK.map(([es,en]) => norm(es+' '+en));
+function renderWords(){
+  const q = norm($('q').value.trim()); let html = '', n = 0;
+  const label = {known:'Known', learn:'Learning', new:'Not seen', lock:'Locked'};
+  DECK.forEach(([es,en], i) => {
+    const st = status(i);
+    if(filt !== 'all' && (filt === 'new' ? !(st==='new'||st==='lock') : st !== filt)) return;
+    if(q && !NORM[i].includes(q)) return;
+    n++;
+    html += `<li data-i="${i}"><span class="rk">${i+1}</span><span class="w"><b lang="es">${esc(es)}</b><div>${esc(en)}</div></span><span class="st ${st}">${label[st]}</span></li>`;
+  });
+  $('list').innerHTML = html;
+  $('wCount').textContent = `${n} word${n===1?'':'s'}`;
+}
+$('q').oninput = renderWords;
+$('chips').onclick = e => { const b = e.target.closest('[data-f]'); if(!b) return; filt = b.dataset.f;
+  [...$('chips').children].forEach(c => c.setAttribute('aria-pressed', c === b)); renderWords(); };
+$('list').onclick = e => { const li = e.target.closest('li'); if(li) speak(+li.dataset.i); };
+
+/* ---------- options view ---------- */
+function seg(id, key, cast){
+  const el = $(id);
+  const paint = () => [...el.children].forEach(b => b.setAttribute('aria-pressed', String(cast(b.dataset.v) === S[key])));
+  el.onclick = e => { const b = e.target.closest('button'); if(!b) return; S[key] = cast(b.dataset.v); save(); paint(); };
+  return paint;
+}
+const paints = [seg('optDir','dir',String), seg('optPer','perDay',Number), seg('optVoice','voice',String)];
+function renderOptions(){
+  paints.forEach(p => p());
+  const sel = $('optLimit'); let o = '';
+  for(let n=100; n<=DECK.length; n+=100) o += `<option value="${n}"${n===S.limit?' selected':''}>Top ${n} words</option>`;
+  sel.innerHTML = o;
+  $('optAuto').checked = S.auto;
+  $('voiceNote').textContent = canSpeak ? 'Uses the Spanish voice installed on your device.' : 'Your browser does not support speech, so Listen buttons are hidden.';
+  $('resetRow').innerHTML = '<button class="btn btn-quiet danger" id="reset1">Reset progress</button>';
+  $('reset1').onclick = askReset;
+}
+$('optLimit').onchange = e => { S.limit = +e.target.value; save(); };
+$('optAuto').onchange = e => { S.auto = e.target.checked; save(); };
+function askReset(){
+  $('resetRow').innerHTML = '<button class="btn btn-quiet" id="reset0">Keep my progress</button><button class="btn btn-quiet danger" id="reset2">Erase everything</button>';
+  $('reset0').onclick = renderOptions;
+  $('reset2').onclick = () => { S = defaults(); save(); lastId = null; renderOptions(); msg('Progress erased.'); };
+}
+function msg(t, err){ const m = $('codeMsg'); m.hidden = false; m.textContent = t; m.classList.toggle('err', !!err); }
+$('mkCode').onclick = () => {
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  const ta = $('code'); ta.value = code;
+  const fallback = () => { ta.focus(); ta.select(); msg('Code selected. Copy it with your device’s Copy command.'); };
+  try{ navigator.clipboard.writeText(code).then(() => msg('Backup code copied.'), fallback); }catch(e){ fallback(); }
+};
+$('useCode').onclick = () => {
+  try{
+    const o = JSON.parse(decodeURIComponent(escape(atob($('code').value.trim()))));
+    if(!o || typeof o.cards !== 'object') throw 0;
+    S = Object.assign(defaults(), o); save(); renderOptions();
+    msg(`Restored ${Object.keys(S.cards).length} words of progress.`);
+  }catch(e){ msg('That code could not be read. Paste the full code exactly as copied.', true); }
+};
+
+/* ---------- routing ---------- */
+const route = () => location.hash.replace('#','');
+function go(){
+  const r = route(), views = {'':'today', study:'study', words:'words', options:'options'};
+  const v = views[r] || 'today';
+  document.querySelectorAll('.view').forEach(s => s.hidden = s.id !== 'v-'+v);
+  $('tabs').hidden = v === 'study';
+  document.body.classList.toggle('studying', v === 'study');
+  document.querySelectorAll('.tabs a').forEach(a => { if(a.dataset.r === (v==='today'?'':v)) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  if(v === 'today') renderToday();
+  if(v === 'study') showCard();
+  if(v === 'words') renderWords();
+  if(v === 'options') renderOptions();
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange', go);
+document.addEventListener('visibilitychange', () => { if(!document.hidden && route()==='' ) renderToday(); });
+if(canSpeak) try{ speechSynthesis.getVoices(); }catch(e){}
+go();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+</script>
+
+</body>
+</html>
